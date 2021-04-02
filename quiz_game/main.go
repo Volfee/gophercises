@@ -5,11 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // https://golang.org/pkg/flag/#String
-var csvFlag = flag.String("csv", "problems.csv",
-	"a csv file in format of 'question,answer'")
+var csvFlag = flag.String("csv", "problems.csv", "a csv file in format of 'question,answer'")
 
 // var limitFlag = flag.Int("limit", 30, "the time limit for the quiz in sec")
 
@@ -18,28 +18,48 @@ func main() {
 
 	f, err := os.Open(*csvFlag)
 	if err != nil {
-		panic(err)
+		exit("Failed to open the CSV file: %s" + *csvFlag)
 	}
 	lines, err := csv.NewReader(f).ReadAll()
 	if err != nil {
-		panic(err)
+		exit("Failed to read file. Err: " + err.Error())
 	}
+	problems := parseLines(lines)
+	correct, wrong := askQuestions(problems)
+	fmt.Printf("Correct answers: %v. Wrong Answers %v.\n", correct, wrong)
+}
 
-	var question string
+func askQuestions(problems []problem) (correct, wrong int) {
 	var user_answer string
-	var correct_answer string
-	var correct_answers int
-	var wrong_answers int
-	for _, line := range lines {
-		question, correct_answer = line[0], line[1]
-		fmt.Printf(question + "= ")
-		fmt.Scanln(&user_answer)
+	for _, prob := range problems {
+		fmt.Printf(prob.question + "= ")
+		fmt.Scanf("%s\n", &user_answer)
 
-		if user_answer == correct_answer {
-			correct_answers += 1
+		if user_answer == prob.answer {
+			correct += 1
 		} else {
-			wrong_answers += 1
+			wrong += 1
 		}
 	}
-	fmt.Printf("Correct answers: %v. Wrong Answers %v.\n", correct_answers, wrong_answers)
+	return
+}
+
+func parseLines(lines [][]string) []problem {
+	ret := make([]problem, len(lines))
+	for idx, line := range lines {
+		ret[idx] = problem{
+			question: strings.TrimSpace(line[0]),
+			answer:   strings.TrimSpace(line[1]),
+		}
+	}
+	return ret
+}
+
+type problem struct {
+	question, answer string
+}
+
+func exit(msg string) {
+	fmt.Println(msg)
+	os.Exit(1)
 }
