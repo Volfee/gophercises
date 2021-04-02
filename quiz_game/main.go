@@ -7,12 +7,14 @@ import (
 	"os"
 )
 
-func main() {
+// https://golang.org/pkg/flag/#String
+var csvFlag = flag.String("csv", "problems.csv",
+	"a csv file in format of 'question,answer'")
 
-	// https://golang.org/pkg/flag/#String
-	var csvFlag = flag.String("csv", "problems.csv",
-		"a csv file in format of 'question,answer' (defaults to \"problems.csv\")")
-	// var limitFlag = flag.Int("limit", 30, "the time limit for the quiz in sec (defaults to 30)")
+// var limitFlag = flag.Int("limit", 30, "the time limit for the quiz in sec")
+
+func main() {
+	flag.Parse() // https://golang.org/pkg/flag/
 
 	f, err := os.Open(*csvFlag)
 	if err != nil {
