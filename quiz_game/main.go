@@ -1,16 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"encoding/csv"
+	"flag"
+	"fmt"
 	"os"
 )
 
 func main() {
-	// https://stackoverflow.com/questions/24999079/reading-csv-file-in-go
-	file := "problems.csv"
 
-	f, err := os.Open(file)
+	// https://golang.org/pkg/flag/#String
+	var csvFlag = flag.String("csv", "problems.csv",
+		"a csv file in format of 'question,answer' (defaults to \"problems.csv\")")
+	// var limitFlag = flag.Int("limit", 30, "the time limit for the quiz in sec (defaults to 30)")
+
+	f, err := os.Open(*csvFlag)
 	if err != nil {
 		panic(err)
 	}
