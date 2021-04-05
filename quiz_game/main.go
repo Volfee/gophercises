@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 // https://golang.org/pkg/flag/#String
 var csvFlag = flag.String("csv", "problems.csv", "a csv file in format of 'question,answer'")
-
-// var limitFlag = flag.Int("limit", 30, "the time limit for the quiz in sec")
+var limitFlag = flag.Int("limit", 30, "the time limit for the quiz in sec")
 
 func main() {
 	flag.Parse() // https://golang.org/pkg/flag/
@@ -25,23 +25,34 @@ func main() {
 		exit("Failed to read file. Err: " + err.Error())
 	}
 	problems := parseLines(lines)
-	correct, wrong := askQuestions(problems)
-	fmt.Printf("Correct answers: %v. Wrong Answers %v.\n", correct, wrong)
-}
 
-func askQuestions(problems []problem) (correct, wrong int) {
-	var user_answer string
-	for _, prob := range problems {
-		fmt.Printf(prob.question + "= ")
-		fmt.Scanf("%s\n", &user_answer)
+	var correct int
+	isCorrect := make(chan bool)
+	timer := time.NewTimer(time.Duration(*limitFlag) * time.Second)
+loop:
+	for _, problem := range problems {
+		go askQuestion(problem, isCorrect)
 
-		if user_answer == prob.answer {
-			correct += 1
-		} else {
-			wrong += 1
+		select {
+		case <-timer.C:
+			break loop
+
+		case correct_answer := <-isCorrect:
+			if correct_answer {
+				correct += 1
+			}
 		}
 	}
-	return
+
+	printResultsAndExit(correct, len(problems))
+}
+
+func askQuestion(p problem, answer chan bool) {
+	var user_answer string
+	fmt.Printf(p.question + "= ")
+	fmt.Scanf("%s\n", &user_answer)
+	isCorrect := user_answer == p.answer
+	answer <- isCorrect
 }
 
 func parseLines(lines [][]string) []problem {
@@ -53,6 +64,11 @@ func parseLines(lines [][]string) []problem {
 		}
 	}
 	return ret
+}
+
+func printResultsAndExit(correct, total int) {
+	fmt.Printf("\n%v correct answers out of %v.\n", correct, total)
+	os.Exit(1)
 }
 
 type problem struct {
